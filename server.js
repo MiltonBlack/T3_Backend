@@ -8,6 +8,7 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 
 // Two Players Mode Array
 let TPM = [];
+const boardState = {};
 // Two Players Game Array
 let TPMPlaying = [];
 let Quick = [];
@@ -27,7 +28,7 @@ io.on("connection", (socket) => {
   // });
 
   // Quick Start/Free Game
-  socket.on("quick", ({ roomId, name }) => {
+  socket.on("qfind", ({ roomId, name }) => {
     console.log(name)
     if (name != null) {
       TPM.push(name);
@@ -45,16 +46,45 @@ io.on("connection", (socket) => {
         let Play = {
           p1: P1,
           p2: P2,
+          turn: "X",
           roomId: roomId
         }
         TPMPlaying.push(Play);
         TPM.splice(0, 2);
         Quick = TPMPlaying
         // socket.broadcast.to(roomId).emit("data", TPMPlaying);
-        io.emit("data", TPMPlaying);
-        
+        io.emit("qfind", TPMPlaying);
       }
     }
+  });
+
+  socket.on("playing", async({name, turn}) => {
+    let obj = await TPMPlaying.find(item => item.p1.P1Name === name);
+    console.log(turn + " before");
+    if (turn === "X") {
+      turn = "O";
+      console.log(turn + " after");
+      obj && io.emit("qplay", turn);
+    } else if
+     (turn === "O") {
+      turn = "X";
+      console.log(turn + " after");
+      obj && io.emit("qplay", turn);
+    }
+  });
+
+  socket.on('drop', ({data, dropzoneId}) => {
+    console.log({data, dropzoneId});
+    io.emit('drop', {data, dropzoneId});
+  });
+
+  socket.on('movePiece', (data) => {
+    // Update the board state with the moved piece
+    boardState[data.pieceId] = data.newPosition;
+
+    // Broadcast the updated board state to all connected clients
+    io.emit('updateBoardState', boardState);
+    console.log(boardState);
   });
 
   console.log(TPM);
