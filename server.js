@@ -12,6 +12,8 @@ const boardState = {};
 // Two Players Game Array
 let TPMPlaying = [];
 let Quick = [];
+let players = [];
+let currentTurn = 0;
 io.on("connection", (socket) => {
   console.log("User Connected");
 
@@ -46,7 +48,7 @@ io.on("connection", (socket) => {
         let Play = {
           p1: P1,
           p2: P2,
-          turn: "X",
+          turn: currentTurn,
           roomId: roomId
         }
         TPMPlaying.push(Play);
@@ -58,25 +60,42 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("playing", async({name, turn}) => {
-    let obj = await TPMPlaying.find(item => item.p1.P1Name === name);
+  socket.on("playing", async ({ name, turn }) => {
+    players = await TPMPlaying.find(item => item.p1.P1Name === name);
+
+    console.log(players + " players");
     console.log(turn + " before");
     if (turn === "X") {
       turn = "O";
       console.log(turn + " after");
       obj && io.emit("qplay", turn);
     } else if
-     (turn === "O") {
+      (turn === "O") {
       turn = "X";
       console.log(turn + " after");
       obj && io.emit("qplay", turn);
     }
   });
+  
+  io.emit('turn', currentTurn);
 
-  socket.on('drop', ({data, dropzoneId}) => {
-    console.log({data, dropzoneId});
-    io.emit('drop', {data, dropzoneId});
+  socket.on('drop', ({ data, dropzoneId }) => {
+    console.log({ data, dropzoneId });
+    io.emit('drop', { data, dropzoneId });
   });
+
+  socket.on('endTurn', () => {
+    // Only allow the current player to end their turn
+    if (socket.id === players[currentTurn % 2]) {
+      // Increment the turn and broadcast the new turn to all clients
+      currentTurn++;
+      io.emit('turn', currentTurn);
+    }
+  });
+
+  // socket.emit('playerNumber', players.indexOf(socket.id));
+  // socket.emit('playerNumber', players.indexOf(socket.id));
+  // Emit the current turn to the connected clients
 
   socket.on('movePiece', (data) => {
     // Update the board state with the moved piece
@@ -96,6 +115,9 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("User Disconnected");
+    if (players.length === 0) {
+      currentTurn = 0;
+    }
   });
 });
 
