@@ -18,11 +18,14 @@ io.on("connection", (socket) => {
     log(`User connected on server port socket: ${socket.id}`);
     log("active Games Length:" + games.length);
 
-    // Find all Quick Play Players
+
+    /***************************** Start of Quick Game  ********************************/
+
+    // Find all Quick Play Players and Pair
     socket.on("quickPlayFind", (name) => {
         const id = generateId();
         const quickPlayerName = `Player_${name}_${id}`;
-        log(`Player ${name}_${id} with socketId "${socket.id}" is interested in a Quick Game.`);
+        log(`Player_${name}_${id} with socketId "${socket.id}" is interested in a Quick Game.`);
         waitingPlayers.push({ name: quickPlayerName, socketId: socket.id });
 
         // Notify the client about their player name
@@ -30,12 +33,14 @@ io.on("connection", (socket) => {
 
         // Pair Players for a Quick Game
         if (waitingPlayers.length >= 2) {
-            const player1 = waitingPlayers.shift();
-            const player2 = waitingPlayers.shift();
+            const playerX = waitingPlayers.shift();
+            const playerO = waitingPlayers.shift();
+            const roomId = genRoomId();
 
             const game = {
-                players: [player1, player2],
+                players: [playerX, playerO],
                 currentTurn: 0,
+                room: roomId
             };
 
             // check game object
@@ -62,6 +67,13 @@ io.on("connection", (socket) => {
         }
         log("waiting Players Length:" + waitingPlayers.length);
     });
+
+    /************************************* End of Quick Game  **************************************/
+
+
+
+
+    /****************************** Start of Invite Player Game  ***********************************/
 
     // Find all Invite Play Players
     socket.on("invitePlayFind", (name) => {
@@ -92,6 +104,11 @@ io.on("connection", (socket) => {
         socket.emit('playerName', tournamentPlayers);
     });
     log("tournament Players Length:" + tournamentPlayers.length);
+
+    /****************************** End of Invite Player Game  ***********************************/
+
+
+
 
     /******* Start of Invite player  **********************/
     // Listen for an invitation to play with another player
@@ -155,10 +172,6 @@ io.on("connection", (socket) => {
 
     /******* End of Invite player  ************************/
 
-
-    /******* Start of Quick Game  ************************/
-
-    /******* End of Quick Game  ************************/
 
     // Try to pair players when at least eight players are waiting for a Tournament Game
     if (tournamentPlayers.length >= 8) {

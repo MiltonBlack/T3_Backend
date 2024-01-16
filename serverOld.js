@@ -2,7 +2,6 @@ const { log } = require("console");
 const express = require("express");
 const app = express();
 const http = require("http");
-// const createGroups = require('./utils/global')
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 
