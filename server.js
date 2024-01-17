@@ -29,13 +29,14 @@ io.on("connection", (socket) => {
         waitingPlayers.push({ name: quickPlayerName, socketId: socket.id });
 
         // Notify the client about their player name
-        socket.emit('playerName', waitingPlayers);
+        socket.emit('playerName', quickPlayerName);
 
         // Pair Players for a Quick Game
         if (waitingPlayers.length >= 2) {
             const playerX = waitingPlayers.shift();
             const playerO = waitingPlayers.shift();
             const roomId = genRoomId();
+            socket.join(roomId);
 
             const game = {
                 players: [playerX, playerO],
@@ -48,7 +49,8 @@ io.on("connection", (socket) => {
 
             // Notify players about the start of the game
             game.players.forEach(player => {
-                io.to(player.socketId).emit('gameStart', game.players.map(p => p.name));
+                io.to(player.socketId).emit('socket', player.socketId);
+                io.to(player.socketId).emit('gameStart', game);
             });
 
             games.push(game);
@@ -337,6 +339,6 @@ export function createBracket(players) {
     return bracket;
 }
 
-server.listen(5000, () =>
-    log(`Server running on port ${5000} => http://localhost:5000`)
+server.listen(PORT, () =>
+    log(`Server running on port ${PORT} => http://localhost:5000`)
 );
